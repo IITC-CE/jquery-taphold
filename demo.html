@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0,user-scalable=no,maximum-scale=1,width=device-width">
+    <meta charset="utf-8">
+    <title>jQuery 'taphold' event demo</title>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="taphold.js"></script>
+
+    <style>
+        #link {
+            margin: 15px;
+        }
+        #buttons {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        #buttons>div {
+            width: 95px;
+            height: 95px;
+            margin: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            -moz-user-select: none;
+            user-select: none;
+        }
+        #log {
+            background: black;
+            color: silver;
+            min-height: 100px;
+            margin: 15px;
+            padding: 10px;
+            padding-top: 2px;
+        }
+    </style>
+
+    <script type="text/javascript">
+        function log (e) {
+            console.log(e);
+            var msg = e.type + ' on ' + this.nodeName;
+            if (this.id) { msg += '#'+this.id; }
+            if (e.currentTarget !== e.delegateTarget) { msg += ' (delegated)'; }
+            $('#log').prepend(msg + '\n');
+        }
+        var HUE = 'hsl(%HUE%, 100%, 50%)';
+        var START_HUE = Math.random()*360;
+        var NEXT_OFFSET = 57;
+        $(function () {
+            var $buttons = $('#buttons');
+            var id = 0;
+            var h = START_HUE;
+            function button (html, Class) {
+                id++;
+                h = (h+NEXT_OFFSET) % 360;
+                return $('<div>')
+                    .css('background', HUE.replace('%HUE%', h))
+                    .attr('id',id)
+                    .addClass(Class)
+                    .html(html)
+                    .prepend('<code>'+id+'</code><br><br>')
+                    .appendTo($buttons);
+            }
+
+            button('taphold click')
+                .on('taphold click', log);
+
+            button('click taphold (delay: 0.9s)')
+                .on('click taphold', {delay: 900}, log);
+
+            button('taphold (delay: 2s)')
+                .on('taphold', {delay: 2000}, log);
+
+            button('taphold click (delegated)','delegated');
+            $buttons.on('taphold click', '.delegated', log);
+
+            button('taphold click (several)')
+                .on('taphold click taphold click', log);
+
+            $('#link').on('click taphold', log);
+
+            $('#log')
+                .on('taphold', function () {$(this).empty();})
+                .on('click', log);
+        });
+    </script>
+</head>
+<body>
+    <div id="link" title="taphold prevents default">
+        <a href="https://github.com/IITC-CE/jquery-taphold/blob/master/demo.html">Source</a>
+    </div>
+    <div id="buttons"></div>
+    <pre id="log" title="taphold to clear"></pre>
+</body>
+</html>
