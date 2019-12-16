@@ -7,12 +7,14 @@
     } else if (event.touches) {
       if (event.touches.length !== 1) { return; }
     }
-    data._triggered = false;
-    data._timer = setTimeout(function (elem) {
+    var $elem = $(this)
+      .removeData('taphold_triggered');
+    data._timer = setTimeout(function () {
       data._timer = null;
-      $(elem).triggerHandler($.Event('taphold', {target: event.target}), data);
-      data._triggered = true;
-    }, data.delay, this);
+      $elem
+        .data('taphold_triggered', true)
+        .triggerHandler($.Event('taphold', {target: event.target}), data);
+    }, data.delay);
   }
 
   function cancelHandler (event) {
@@ -20,7 +22,8 @@
     if (data._timer) {
       clearTimeout(data._timer);
       data._timer = null;
-    } else if (data._triggered && event.type === 'touchend') {
+    } else if (event.type === 'touchend' &&
+        $(event.delegateTarget).data('taphold_triggered')) {
       // prevent simulated mouse events https://w3c.github.io/touch-events/#mouse-events
       return false;
     }
@@ -29,7 +32,7 @@
   function namespaced (name) {
     return name.replace(/\w+/g, '$&.taphold');
   }
-  var startevent, cancelevent;
+  var startevent, cancelevent, clickevent = namespaced('click');
   if (window.PointerEvent) {
     startevent = namespaced('pointerdown');
     cancelevent = namespaced('pointerup pointercancel pointerout');
@@ -43,25 +46,33 @@
       delay: 500
     },
 
-    setup: function (data, _, eventHandle) {
+    setup: function (data) {
       data = $.extend({}, $.event.special.taphold.defaults, data);
-      eventHandle._clickHandler = function (event) {
-        if (data._triggered) {
-          event.stopPropagation();
-          event.preventDefault();
-        }
-      };
-      // https://stackoverflow.com/a/20290312/2520247
-      // https://github.com/jquery/jquery/issues/1735
-      this.addEventListener('click', eventHandle._clickHandler, {capture: true});
       $(this)
         .on(startevent, data, startHandler)
-        .on(cancelevent, data, cancelHandler);
+        .on(cancelevent, data, cancelHandler)
+        .on(clickevent, $.noop); // to be able to prevent default action
+                                 // otherwise $.event.special.click.handle will be skipped
     },
 
-    teardown: function (_, eventHandle) {
-      this.removeEventListener('click', eventHandle._clickHandler, {capture: true});
-      $(this).off('.taphold');
+    teardown: function () {
+      $(this)
+        .off('.taphold')
+        .removeData('taphold_triggered');
+    }
+  };
+
+  $.event.special.click = {
+    delegateType: 'click',
+    bindType: 'click',
+    handle: function (event) {
+      var e = event.originalEvent;
+      var path = e.path || e.composedPath && e.composedPath() || [event.delegateTarget];
+      if (path.some(function (el) { return $(el).data('taphold_triggered'); })) {
+        event.preventDefault();
+        return false;
+      }
+      return event.handleObj.handler.apply(this, arguments);
     }
   };
 })(jQuery);
