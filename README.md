@@ -8,6 +8,9 @@ To trigger a `taphold` event you need to click/tap an element and hold it for 0.
 If released before the delay passed then a normal click event is triggered instead.
 If dragged or moved out of the element then no event is triggered.
 
+Note: for touch devices `taphold` behaves pretty much like `contextmenu` event
+(excluging customizable <var>delay</var> value).
+
 
 ### Highlights
 

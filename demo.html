@@ -36,11 +36,13 @@
     </style>
 
     <script type="text/javascript">
-        function log (e) {
+        function log (e, msg) {
             console.log(e);
-            var msg = e.type + ' on ' + this.nodeName;
-            if (this.id) { msg += '#'+this.id; }
-            if (e.currentTarget !== e.delegateTarget) { msg += ' (delegated)'; }
+            var target = e.currentTarget; // this
+            msg = typeof msg === 'string' && msg+' ' || '';
+            msg += e.type + ' on ' + target.nodeName;
+            if (target.id) { msg += '#'+target.id; }
+            if (target !== e.delegateTarget) { msg += ' (delegated)'; }
             $('#log').prepend(msg + '\n');
         }
         var HUE = 'hsl(%HUE%, 100%, 50%)';
@@ -82,6 +84,16 @@
             $('#log')
                 .on('taphold', function () {$(this).empty();})
                 .on('click', log);
+
+            var menu = false;
+            $('body').on('click', function (e) {
+                if (e.detail === 3) {
+                    menu = !menu;
+                    var action = menu ? 'on' : 'off';
+                    $('#log').prepend('listen contextmenu: ' + action + '\n');
+                    $('body')[action]('contextmenu', log);
+                }
+            });
         });
     </script>
 </head>
